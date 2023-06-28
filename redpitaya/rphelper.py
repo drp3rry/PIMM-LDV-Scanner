@@ -1,4 +1,4 @@
-# import redpitaya_scpi as scpi
+import redpitaya_scpi as scpi
 import time
 
 class rpwrapper:
