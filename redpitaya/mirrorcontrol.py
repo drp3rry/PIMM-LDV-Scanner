@@ -1,14 +1,5 @@
-import redpitaya_scpi as scpi
 from scipy.optimize import fsolve
 import numpy as np
-
-IP = "169.254.29.96"
-rp_s = scpi.scpi(IP)
-
-def set_voltage(pin, voltage, print_voltage=False):
-    rp_s.tx_txt('ANALOG:PIN AOUT'+str(pin)+',' + str(voltage))
-    if print_voltage:
-        print("Voltage setting for AO["+str(pin)+"] = "+str(voltage)+"V")
 
 def y_equation(alpha, y, gamma, d):
     return (-2*d*np.cos(2*alpha) + 15.705*np.sin(2*alpha - 2*gamma) - 15.705*np.sin(2*alpha + 2*gamma) - 7.65*np.cos(2*alpha) + 3.825*np.cos(2*alpha - 2*gamma) + 3.825*np.cos(2*alpha + 2*gamma))/(np.cos(-2*alpha + 2*gamma + 0.184044969622802) - np.cos(2*alpha + 2*gamma + 0.184044969622802)) - y
