@@ -1,4 +1,5 @@
 from scipy.optimize import fsolve
+# import rphelper as rph
 import numpy as np
 
 def y_equation(alpha, y, gamma, d):
@@ -28,11 +29,12 @@ def mirror_solve(target, distance):
     return (alpha_voltage, gamma_voltage)
 
 class PositionTracker:
-    def __init__(self, distance):
+    def __init__(self, distance, redpitaya_object):
         self.x = 0
         self.y = 0
         self.distance = distance
         self.voltages = (0, 0)
+        self.rp = redpitaya_object
 
     def print_position(self):
         print("Current position: x =", self.x, "y =", self.y)
@@ -44,5 +46,15 @@ class PositionTracker:
     
     def set_voltage(self):
         self.solve_voltage()
-        set_voltage(0, self.voltages[0])
-        set_voltage(2, self.voltages[1])
+        self.rp.set_voltage(0, self.voltages[0])
+        self.rp.set_voltage(2, self.voltages[1])
+
+    def process_coordinates(self, x, y):
+        self.x = x
+        self.y = y
+        self.set_voltage()
+
+    def clear_coordinates(self):
+        self.x = 0
+        self.y = 0
+        self.set_voltage()

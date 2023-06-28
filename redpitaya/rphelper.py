@@ -1,6 +1,7 @@
 import redpitaya_scpi as scpi
 import time
 
+
 class rpwrapper:
     def __init__(self, IP):
         self.IP = IP
