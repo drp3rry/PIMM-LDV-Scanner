@@ -129,11 +129,11 @@ class scpi (object):
 
     def err_c(self):
         """Error count."""
-        return rp.txrx_txt('SYST:ERR:COUN?')
+        return self.txrx_txt('SYST:ERR:COUN?')
 
     def err_c(self):
         """Error next."""
-        return rp.txrx_txt('SYST:ERR:NEXT?')
+        return self.txrx_txt('SYST:ERR:NEXT?')
     
 
 import time
@@ -155,6 +155,7 @@ class rpwrapper:
         self.rp_s.tx_txt('SOUR1:VOLT:OFFS ' + str(amplitude/2))
         # Acquisition
         self.rp_s.tx_txt('ACQ:DEC ' + str(decimation))
+        self.rp_s.tx_txt('ACQ:TRIG:DLY 8000')
         ## TODO: Error handling
         return True
 
@@ -191,10 +192,28 @@ class rpwrapper:
         data_string_2 = data_string_2.strip('{}\n\r').replace("  ", "").split(',')
         data_2 = list(map(float, data_string_2))
 
+        # stop acquisition
+        self.rp_s.tx_txt('ACQ:STOP')
+        self.rp_s.tx_txt('OUTPUT1:STATE OFF')
         return data_1, data_2
     
     def set_voltage(self, pin, voltage, print_voltage=False):
         self.rp_s.tx_txt('ANALOG:PIN AOUT'+str(pin)+',' + str(voltage))
         if print_voltage:
             print("Voltage setting for AO["+str(pin)+"] = "+str(voltage)+"V")
+        return True
+    
+
+class rpwrapperTest:
+    def __init__(self):
+        self.rp_s = True
+
+    def setup_acquisition(self, waveform, frequency, amplitude, duty_cycle, decimation):
+        print("TEST: ACQUISITION SETUP")
+        return True
+    def data_acquisition(self, decimation):
+        print("TEST: ACQUISITION")
+        return (True, True)
+    def set_voltage(self, pin, voltage, print_voltage=False):
+        # print("TEST: SET VOLTAGE")
         return True

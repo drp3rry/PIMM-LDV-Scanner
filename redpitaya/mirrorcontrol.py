@@ -34,25 +34,30 @@ class PositionTracker:
         self.y = 0
         self.distance = distance
         self.voltages = (0, 0)
+        self.mode_test = False
         self.rp = redpitaya_object
+        
 
     def print_position(self):
         print("Current position: x =", self.x, "y =", self.y)
 
-    def solve_voltage(self):
+    def solve_voltage(self, msg = True):
         self.voltages =  mirror_solve((-self.x, self.y), self.distance)
-        print("Voltage: alpha =", self.voltages[0], "gamma =", self.voltages[1])
+        if msg:
+            print("Voltage: alpha =", self.voltages[0], "gamma =", self.voltages[1])
         # return voltages
     
-    def set_voltage(self):
-        self.solve_voltage()
+    def set_voltage(self, msg = True):
+        self.solve_voltage(msg)
+        if self.mode_test:
+            return
         self.rp.set_voltage(0, self.voltages[0])
         self.rp.set_voltage(2, self.voltages[1])
 
-    def process_coordinates(self, x, y):
+    def process_coordinates(self, x, y, msg = True):
         self.x = x
         self.y = y
-        self.set_voltage()
+        self.set_voltage(msg)
 
     def clear_coordinates(self):
         self.x = 0
