@@ -5,10 +5,10 @@ import time
 class LaserControl:
     def __init__(self, redpitaya_object):
         self.waveform = 'pwm'
-        self.frequency = 10
-        self.amplitude = 0.5
-        self.duty_cycle = 0.005
-        self.decimation = 9
+        self.frequency = 1
+        self.amplitude = 0.75
+        self.duty_cycle = 0.001
+        self.decimation = 10
         self.rp = redpitaya_object
         self.reference_data = []
         self.response_data = []
@@ -19,9 +19,11 @@ class LaserControl:
         self.rp.setup_acquisition(self.waveform, self.frequency, self.amplitude, self.duty_cycle, self.decimation)
 
     def acquire(self):
-        self.response_data, self.reference_data = self.rp.data_acquisition(self.decimation)
+        self.response_data, self.reference_data = self.rp.data_acquisition(self.decimation, self.frequency)
 
-    def plot(self):
+    def plot(self, clear = False):
+        if clear:
+            plt.clf()
         plt.plot(self.reference_data, label='Reference')
         plt.plot(self.response_data, label='Response')
         plt.legend()
@@ -42,6 +44,9 @@ class LaserControl:
         # with open("sample_data/"+filepath+"_response.txt", 'w') as f:
         #     f.write(f"Response Data: {self.response_data}")
         #     f.close()
+
+    
+    
     def test_scan(self):
         return True
 

@@ -2,8 +2,10 @@ from redpitaya.lasercontrol import LaserControl
 from redpitaya.mirrorcontrol import PositionTracker
 from redpitaya.redpitaya_scpi import rpwrapper
 from redpitaya.redpitaya_scpi import rpwrapperTest
+from datamanager.visualization import DataManager
 import tkinter as tk
 import time
+import ast
 
 # rp = rpwrapper("169.254.29.96")
 # mirror = PositionTracker(100, rp)
@@ -19,6 +21,7 @@ class InteractiveWindow:
 
         self.laser = LaserControl(self.rp)
         self.mirror = PositionTracker(distance, self.rp)
+        self.data = DataManager()
 
         # Laser Parameters
         # self.laser.waveform = 'pwm'
@@ -57,6 +60,7 @@ class InteractiveWindow:
         self.coordinates_label.pack()
 
         ### BUTTONS ###
+        self.buttonframe = tk.Frame(self.root)
         self.clear_button = tk.Button(self.root, text="Clear", command=self.clear_canvas)
         self.clear_button.pack()
 
@@ -72,8 +76,14 @@ class InteractiveWindow:
         self.scan_button = tk.Button(self.root, text="Scan Object", command=self.scan_object)
         self.scan_button.pack()
 
-        self.save_button = tk.Button(self.root, text="Save", command=self.save_data)
+        self.save_button = tk.Button(self.root, text="Save data", command=self.save_data)
         self.save_button.pack()
+
+        self.load_button = tk.Button(self.root, text="Save current configuration", command=self.save_configuration)
+        self.load_button.pack()
+
+        self.load_button = tk.Button(self.root, text="Load saved configuration", command=self.load_configuration)
+        self.load_button.pack()
 
     def record_coordinates(self, event):
         self.tkx = event.x - (event.x % self.grid_size)
@@ -125,6 +135,35 @@ class InteractiveWindow:
     def save_data(self):
         name = input("Enter a name for the data: ")
         self.laser.save_data(name)
+        
+    def save_configuration(self):
+        ## Enter name of configuration file
+        name = input("Enter a name for the configuration: ")
+        ## Save configuration as dictionary
+        config = {"topleft": self.topleft, "topright": self.topright, "bottomleft": self.bottomleft, "bottomright": self.bottomright}
+        with open ("sample_data/configurations/" + name + ".txt", "w") as f:
+            f.write(str(config))
+            f.close()
+
+
+    def load_configuration(self):
+        ## Enter name of configuration file
+        try:
+            name = input("Enter a name for the configuration: ")
+            with open ("sample_data/configurations/" + name + ".txt", "r") as f:
+                config = ast.literal_eval(f.read())
+                f.close()
+            ## Set class variables to configuration, prepare the button for next step
+            self.topleft = config["topleft"]
+            self.topright = config["topright"]
+            self.bottomleft = config["bottomleft"]
+            self.bottomright = config["bottomright"]
+            self.paint_next = "draw object outline"
+            self.paint_button.config(text=f"Set: {self.paint_next}")
+            print("Configuration loaded")
+        except:
+            print("Configuration loading failed")
+
        
     def paint_object(self):
         # TODO: Create a mapping function from tk grid to actual real life grid
@@ -164,20 +203,24 @@ class InteractiveWindow:
             print("Scanning object not set")
             return False
         ### Scan object: get coordinates
-        ## Bounding box: be cautious
+        ## Bounding box: be cautious and set to smallest box
         print("Determining scan points..")
         left = max(self.topleft[0], self.bottomleft[0])
         top = max(self.topleft[1], self.topright[1])
         right = min(self.topright[0]+self.grid_size, self.bottomright[0]+self.grid_size)
         bottom = min(self.bottomleft[1]+self.grid_size, self.bottomright[1]+self.grid_size)
-        # Reset scanning points
+        # Create a list of scanning points
         self.scanning_points = []
         for y in range(top, bottom, self.grid_size):
             for x in range(left, right, self.grid_size):
                 self.scanning_points += [(x, y)]
+        ## save scanning points in data object
+        self.data.scan_path = self.scanning_points
         
         ### Iterate over scanning points
         print("Starting scan..")
+        ## Configure laser
+        self.laser.configure()
         for i in self.scanning_points:
             ### Draw yellow box
             self.canvas.create_rectangle(i[0], i[1], i[0] + self.grid_size, i[1] + self.grid_size, fill="yellow")
@@ -185,14 +228,21 @@ class InteractiveWindow:
             self.mirror.x, self.mirror.y = self.get_physical_coordinates(i[0], i[1])
             self.mirror.set_voltage()
             
-
             ### Fire laser
-            
-            ### Save data
+            self.laser.acquire()
+            ## Display plot for first 5 scans
+            if self.scanning_points.index(i) < 5:
+                self.laser.plot()
 
+            ### Save data
+            self.data.add_scan(self.laser.reference_data, self.laser.response_data)
             ### Draw green box
             self.canvas.create_rectangle(i[0], i[1], i[0] + self.grid_size, i[1] + self.grid_size, fill="green")
-    
+            ### Wait to separate scans
+            time.sleep(0.005)
+            
+        ### Save data
+        self.data.save_data()
 
 
     def start(self):
@@ -203,6 +253,6 @@ class InteractiveWindow:
     
 
 # decimation = 10
-distance = 300
-window = InteractiveWindow(400, 400, 10, distance, mode_test=True)
+distance = 400
+window = InteractiveWindow(500, 500, 10, distance, mode_test=False)
 window.start()

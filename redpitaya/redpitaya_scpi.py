@@ -159,13 +159,15 @@ class rpwrapper:
         ## TODO: Error handling
         return True
 
-    def data_acquisition(self, decimation):
+    
+    def data_acquisition(self, decimation, frequency):
         sample_time = (16384/(125*10**6))*decimation
         self.rp_s.tx_txt('ACQ:START')
         self.rp_s.tx_txt('ACQ:TRIG AWG_PE')
         self.rp_s.tx_txt('OUTPUT1:STATE ON')
         self.rp_s.tx_txt('SOUR1:TRIG:INT')
 
+        time.sleep(2/frequency)
         print("Waiting for trigger...")
         while 1:
             self.rp_s.tx_txt('ACQ:TRIG:STAT?')
@@ -174,7 +176,8 @@ class rpwrapper:
                 time.sleep(0.1)
                 break
         
-        time.sleep(sample_time*5)
+        # time.sleep(sample_time*5)
+        time.sleep(2/frequency)
         # read source 1
         self.rp_s.tx_txt('ACQ:SOUR1:DATA?')            
         data_string_1 = self.rp_s.rx_txt() 
