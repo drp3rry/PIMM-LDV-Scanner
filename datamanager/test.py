@@ -4,7 +4,7 @@ import matplotlib.animation as animation
 import numpy as np
 
 
-path = "/Users/danielperry/Documents/EngSci/Year4Summer/Arts et Metier/PIMM development/PIMM-LDV-Scanner/sample_data/experiments/trial6.txt"
+path = "/Users/danielperry/Documents/EngSci/Year4Summer/Arts et Metier/PIMM development/PIMM-LDV-Scanner/sample_data/experiments/trial7.txt"
 print("Reading data from: " + path)
 with open(path) as f:
     data = ast.literal_eval(f.read())
@@ -45,7 +45,7 @@ print("Plotting data...")
 
 ### animation
 print("Animating data...")
-num_frames = len(response_data[0])
+num_frames = min([len(x) for x in self.data_manager.response_data])
 fps = 500
 length = num_frames/fps
 
@@ -62,6 +62,8 @@ def animate(time):
     im.set_array(response)
     title = plt.title(f"Index: {time} of {num_frames}")
     return [im, title]
+
+plt.close('all')
 
 # anim = animation.FuncAnimation(fig, animate, frames=range(0, len(response_data[0])), interval=50, blit=True)
 anim = animation.FuncAnimation(fig, animate, frames=num_frames, interval=1000/fps, blit=False, repeat=False)

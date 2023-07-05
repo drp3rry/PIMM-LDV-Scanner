@@ -159,13 +159,21 @@ class rpwrapper:
         ## TODO: Error handling
         return True
 
-    
-    def data_acquisition(self, decimation, frequency):
-        sample_time = (16384/(125*10**6))*decimation
+    def acquisition_start(self):
         self.rp_s.tx_txt('ACQ:START')
         self.rp_s.tx_txt('ACQ:TRIG AWG_PE')
         self.rp_s.tx_txt('OUTPUT1:STATE ON')
         self.rp_s.tx_txt('SOUR1:TRIG:INT')
+        return True
+    
+    def acquisition_stop(self):
+        self.rp_s.tx_txt('ACQ:STOP')
+        self.rp_s.tx_txt('OUTPUT1:STATE OFF')
+        return True
+    
+    def data_acquisition(self, decimation, frequency):
+        
+        sample_time = (16384/(125*10**6))*decimation
 
         time.sleep(2/frequency)
         print("Waiting for trigger...")
@@ -195,9 +203,9 @@ class rpwrapper:
         data_string_2 = data_string_2.strip('{}\n\r').replace("  ", "").split(',')
         data_2 = list(map(float, data_string_2))
 
-        # stop acquisition
-        self.rp_s.tx_txt('ACQ:STOP')
-        self.rp_s.tx_txt('OUTPUT1:STATE OFF')
+        # # stop acquisition
+        # self.rp_s.tx_txt('ACQ:STOP')
+        # self.rp_s.tx_txt('OUTPUT1:STATE OFF')
         return data_1, data_2
     
     def set_voltage(self, pin, voltage, print_voltage=False):

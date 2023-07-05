@@ -18,6 +18,14 @@ class LaserControl:
         print(f"Waveform: {self.waveform}, Frequency: {self.frequency}, Amplitude: {self.amplitude}, Duty Cycle: {self.duty_cycle}, Decimation: {self.decimation}")
         self.rp.setup_acquisition(self.waveform, self.frequency, self.amplitude, self.duty_cycle, self.decimation)
 
+    def start(self):
+        self.rp.acquisition_start()
+        print("Acquisition started")
+    
+    def stop(self):
+        self.rp.acquisition_stop()
+        print("Acquisition stopped")
+        
     def acquire(self):
         self.response_data, self.reference_data = self.rp.data_acquisition(self.decimation, self.frequency)
 
