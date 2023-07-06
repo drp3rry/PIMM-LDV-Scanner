@@ -2,7 +2,7 @@ from redpitaya.lasercontrol import LaserControl
 from redpitaya.mirrorcontrol import PositionTracker
 from redpitaya.redpitaya_scpi import rpwrapper
 from redpitaya.redpitaya_scpi import rpwrapperTest
-from datamanager.visualization import DataManager
+from datamanager.visualization import DataManager, Visualizor
 import tkinter as tk
 import time
 import ast
@@ -22,6 +22,9 @@ class InteractiveWindow:
         self.laser = LaserControl(self.rp)
         self.mirror = PositionTracker(distance, self.rp)
         self.data = DataManager()
+        ## give scanning settings to data manager
+        self.data.frequency = self.laser.frequency
+        self.data.decimation = self.laser.decimation
 
         # Laser Parameters
         # self.laser.waveform = 'pwm'
@@ -73,11 +76,14 @@ class InteractiveWindow:
         self.acquire_button = tk.Button(self.root, text="Acquire", command=self.acquire_single_plot)
         self.acquire_button.pack()
 
+        self.save_button = tk.Button(self.root, text="Save last plot", command=self.save_data)
+        self.save_button.pack()
+
         self.scan_button = tk.Button(self.root, text="Scan Object", command=self.scan_object)
         self.scan_button.pack()
 
-        self.save_button = tk.Button(self.root, text="Save data", command=self.save_data)
-        self.save_button.pack()
+        self.heatmap_button = tk.Button(self.root, text="Generate Heatmap", command=self.generate_heatmap)
+        self.heatmap_button.pack()
 
         self.load_button = tk.Button(self.root, text="Save current configuration", command=self.save_configuration)
         self.load_button.pack()
@@ -98,7 +104,7 @@ class InteractiveWindow:
         self.mirror.set_voltage(msg = False)
         self.coordinates.append((self.mirror.x, self.mirror.y))
         self.canvas.create_rectangle(self.tkx, self.tky, self.tkx + self.grid_size, self.tky + self.grid_size, fill="black")
-        self.update_coordinates_label(self.mirror.x, self.mirror.y, self.mirror.voltages)
+        self.update_coordinates_label(self.tkx, self.tky, self.mirror.voltages)
         ### update vertex corners
 
     def get_physical_coordinates(self, x, y):
@@ -129,7 +135,9 @@ class InteractiveWindow:
         self.laser.configure()
 
     def acquire_single_plot(self):
+        self.laser.start()
         self.laser.acquire()
+        self.laser.stop()
         self.laser.plot()
     
     def save_data(self):
@@ -163,6 +171,7 @@ class InteractiveWindow:
             print("Configuration loaded")
         except:
             print("Configuration loading failed")
+    
 
        
     def paint_object(self):
@@ -216,33 +225,49 @@ class InteractiveWindow:
                 self.scanning_points += [(x, y)]
         ## save scanning points in data object
         self.data.scan_path = self.scanning_points
-        
+        print(f"Scan points: {self.scanning_points}")
         ### Iterate over scanning points
         print("Starting scan..")
         ## Configure laser
         self.laser.configure()
+        # self.laser.start()
+        scan_number = 1
+        self.laser.start()
         for i in self.scanning_points:
-            ### Draw yellow box
-            self.canvas.create_rectangle(i[0], i[1], i[0] + self.grid_size, i[1] + self.grid_size, fill="yellow")
-            ### Set mirror location
-            self.mirror.x, self.mirror.y = self.get_physical_coordinates(i[0], i[1])
-            self.mirror.set_voltage()
-            
-            ### Fire laser
-            self.laser.acquire()
-            ## Display plot for first 5 scans
-            if self.scanning_points.index(i) < 5:
-                self.laser.plot()
-
-            ### Save data
-            self.data.add_scan(self.laser.reference_data, self.laser.response_data)
-            ### Draw green box
-            self.canvas.create_rectangle(i[0], i[1], i[0] + self.grid_size, i[1] + self.grid_size, fill="green")
-            ### Wait to separate scans
-            time.sleep(0.005)
-            
-        ### Save data
+            self.scan_loop(i, scan_number)
+            scan_number += 1
+        self.laser.stop()
+        print("Scan complete")
         self.data.save_data()
+        print("Data saved")
+        
+
+    def scan_loop(self,scan_point, scan_number):
+        # self.laser.start()
+        ## Draw yellow box
+        self.canvas.create_rectangle(scan_point[0], scan_point[1], scan_point[0] + self.grid_size, scan_point[1] + self.grid_size, fill="yellow")
+        ### Set mirror location
+        print(f"Scanning point: {scan_point} ({scan_number}/{len(self.scanning_points)})")
+        self.mirror.x, self.mirror.y = self.get_physical_coordinates(scan_point[0], scan_point[1])
+        self.mirror.set_voltage(msg=False)
+        
+        ### Fire laser
+        print("Acquiring data..")
+        self.laser.acquire()
+
+        ### Save data
+        print("Saving data..")
+        self.data.add_scan(self.laser.reference_data, self.laser.response_data)
+        ### Draw green box
+        self.canvas.create_rectangle(scan_point[0], scan_point[1], scan_point[0] + self.grid_size, scan_point[1] + self.grid_size, fill="green")
+        # self.laser.stop()
+    
+    def generate_heatmap(self):
+        viz = Visualizor(self.data.scan_path, self.data.response_data)
+        print(viz.x_values)
+        print(viz.y_values)
+        print(viz.response)
+        viz.heatmap()
 
 
     def start(self):
@@ -253,6 +278,6 @@ class InteractiveWindow:
     
 
 # decimation = 10
-distance = 400
-window = InteractiveWindow(500, 500, 10, distance, mode_test=False)
+distance = 800
+window = InteractiveWindow(550, 550, 5, distance, mode_test=False)
 window.start()

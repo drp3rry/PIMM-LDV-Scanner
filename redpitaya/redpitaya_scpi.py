@@ -153,40 +153,50 @@ class rpwrapper:
         self.rp_s.tx_txt('SOUR1:VOLT ' + str(amplitude/2))
         self.rp_s.tx_txt('SOUR1:DCYC ' + str(duty_cycle))
         self.rp_s.tx_txt('SOUR1:VOLT:OFFS ' + str(amplitude/2))
+        ### BURST
+        
         # Acquisition
         self.rp_s.tx_txt('ACQ:DEC ' + str(decimation))
         self.rp_s.tx_txt('ACQ:TRIG:DLY 8000')
         ## TODO: Error handling
         return True
 
-    def acquisition_start(self):
-        self.rp_s.tx_txt('ACQ:START')
-        self.rp_s.tx_txt('ACQ:TRIG AWG_PE')
+    def reference_start(self):
         self.rp_s.tx_txt('OUTPUT1:STATE ON')
         self.rp_s.tx_txt('SOUR1:TRIG:INT')
+
+    def reference_stop(self):
+        self.rp_s.tx_txt('OUTPUT1:STATE OFF')
+
+    def acquisition_start(self):
+        self.rp_s.tx_txt('ACQ:START')
+        self.rp_s.tx_txt('ACQ:TRIG CH2_PE')
+        # self.rp_s.tx_txt('ACQ:TRIG AWG_PE')
+        # self.rp_s.tx_txt('OUTPUT1:STATE ON')
+        # self.rp_s.tx_txt('SOUR1:TRIG:INT')
         return True
     
     def acquisition_stop(self):
         self.rp_s.tx_txt('ACQ:STOP')
-        self.rp_s.tx_txt('OUTPUT1:STATE OFF')
+        # self.rp_s.tx_txt('OUTPUT1:STATE OFF')
         return True
     
-    def data_acquisition(self, decimation, frequency):
-        
-        sample_time = (16384/(125*10**6))*decimation
+    def data_acquisition(self, sample_time, frequency):
 
-        time.sleep(2/frequency)
+        time.sleep(2*frequency)
         print("Waiting for trigger...")
         while 1:
             self.rp_s.tx_txt('ACQ:TRIG:STAT?')
             response = self.rp_s.rx_txt()
             if response == 'TD':
-                time.sleep(0.1)
+                time.sleep(sample_time)
                 break
         
-        # time.sleep(sample_time*5)
-        time.sleep(2/frequency)
+        # time.sleep(sample_time*2)
+        time.sleep(2*frequency)
         # read source 1
+    
+
         self.rp_s.tx_txt('ACQ:SOUR1:DATA?')            
         data_string_1 = self.rp_s.rx_txt() 
         self.rp_s.tx_txt('ACQ:SOUR2:DATA?')
@@ -198,10 +208,13 @@ class rpwrapper:
         self.rp_s.tx_txt('ACQ:SOUR2:DATA?')
         data_string_2 = self.rp_s.rx_txt()  
 
+    
         data_string_1 = data_string_1.strip('{}\n\r').replace("  ", "").split(',')
         data_1 = list(map(float, data_string_1))     
         data_string_2 = data_string_2.strip('{}\n\r').replace("  ", "").split(',')
         data_2 = list(map(float, data_string_2))
+
+        print(data_1[:20])
 
         # # stop acquisition
         # self.rp_s.tx_txt('ACQ:STOP')

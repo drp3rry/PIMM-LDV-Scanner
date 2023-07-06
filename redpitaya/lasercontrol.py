@@ -6,9 +6,10 @@ class LaserControl:
     def __init__(self, redpitaya_object):
         self.waveform = 'pwm'
         self.frequency = 1
-        self.amplitude = 0.75
+        self.amplitude = 1
         self.duty_cycle = 0.001
-        self.decimation = 10
+        self.decimation = 9
+        self.sample_time = (16384/(125*10**6))*self.decimation
         self.rp = redpitaya_object
         self.reference_data = []
         self.response_data = []
@@ -19,15 +20,27 @@ class LaserControl:
         self.rp.setup_acquisition(self.waveform, self.frequency, self.amplitude, self.duty_cycle, self.decimation)
 
     def start(self):
-        self.rp.acquisition_start()
-        print("Acquisition started")
+        # self.rp.acquisition_start()
+        # print("Acquisition started")
+        self.rp.reference_start()
     
     def stop(self):
-        self.rp.acquisition_stop()
-        print("Acquisition stopped")
-        
+        # self.rp.acquisition_stop()
+        # print("Acquisition stopped")
+        self.rp.reference_stop()
+
     def acquire(self):
-        self.response_data, self.reference_data = self.rp.data_acquisition(self.decimation, self.frequency)
+        self.rp.acquisition_start()
+        self.response_data, self.reference_data = self.rp.data_acquisition(self.sample_time, self.frequency)
+        self.rp.acquisition_stop()
+        return True
+        # clear existing data
+        # self.reference_data, self.response_data = [], []
+        # # acquire new data
+        # while len(self.reference_data) == 0:
+        #     print("Data is empty, acquiring new data...")
+        #     self.reference_data, self.response_data = self.rp.data_acquisition(self.sample_time, self.frequency)
+        # return True
 
     def plot(self, clear = False):
         if clear:

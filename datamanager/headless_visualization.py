@@ -3,16 +3,15 @@ import matplotlib.animation as animation
 import numpy as np
 import pandas as pd
 
+
+
 class DataManager:
     def __init__(self):
         self.experiment = None
         self.scan_path = []
         self.reference = []
         self.response_data = []
-        self.frequency = 0
-        self.decimation = 0
         self.dataframe = None
-        # self.filename = "woodbeam-test"
 
     def save_data(self, as_text = False):
         filename = input("Enter filename: ")
@@ -29,31 +28,19 @@ class DataManager:
                 for j in range(len(self.scan_path)):
                     x = self.scan_path[j][0]
                     y = self.scan_path[j][1]
-                    try:
-                        response = self.response_data[j][i]
-                    except:
-                        response = 0
+                    response = self.response_data[j][i]
                     data_list.append([i, x, y, response])
             data_df = pd.DataFrame(data_list, columns=data_columns)
             data_df.to_pickle("sample_data/experiments/"+filename+".pkl")
 
     def add_scan(self, reference, response):
-        ## Response duration 
-        sampling_rate = 125000000
-        period_length = (1/self.frequency)/(self.decimation/sampling_rate)
-        print("Cleaning scan data...")
         ## Clean scan data
-        try:
-            for i in range(len(reference)):
-                if reference[i] > 0.1:
-                    impulse_start = i
-                    break
-            reference = reference[impulse_start-1:impulse_start+int(period_length)]
-            response = response[impulse_start-1:impulse_start+int(period_length)]
-        except:
-            print("ERR: Scan data is not clean")
-            # make response list of zeros length of self.reference
-            response = [0 for i in range(len(self.reference))]
+        for i in range(len(reference)):
+            if reference[i] > 0.1:
+                impulse_start = i
+                break
+        reference = reference[impulse_start-1:]
+        response = response[impulse_start-1:]
 
         ## If reference is empty, set reference
         if len(self.reference) == 0:
@@ -68,9 +55,8 @@ class DataManager:
 
         
 class Visualizor:
-    def __init__(self, scan_path, response_data):
-        self.scan_path = scan_path
-        self.response_data = response_data
+    def __init__(self, data_manager):
+        self.data_manager = data_manager
         self.x_values = list(set([x[0] for x in self.scan_path]))
         self.y_values = list(set([x[1] for x in self.scan_path]))
         self.response = np.zeros((len(self.x_values), len(self.y_values)))
