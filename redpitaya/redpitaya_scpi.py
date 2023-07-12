@@ -145,6 +145,98 @@ class rpwrapper:
         self.rp_s = scpi(IP)
 
 
+    def setup_burst(self, waveform, frequency, amplitude, duty_cycle, decimation):
+        # Signal
+        self.rp_s.tx_txt('GEN:RST')
+        self.rp_s.tx_txt('SOUR1:FUNC ' + str(waveform).upper())
+        self.rp_s.tx_txt('SOUR1:FREQ:FIX ' + str(frequency))
+        self.rp_s.tx_txt('SOUR1:VOLT ' + str(amplitude/2))
+        self.rp_s.tx_txt('SOUR1:DCYC ' + str(duty_cycle))
+        self.rp_s.tx_txt('SOUR1:VOLT:OFFS ' + str(amplitude/2))
+
+        self.rp_s.tx_txt('SOUR1:BURS:STAT BURST')                
+        self.rp_s.tx_txt('SOUR1:BURS:NOR ' + str(1)) 
+        # Acquisition
+        self.rp_s.tx_txt('ACQ:DEC ' + str(decimation))
+        self.rp_s.tx_txt('ACQ:TRIG:DLY 8192')
+        ## TODO: Error handling
+        return True
+    
+    def acquire_burst(self, sample_time, frequency):
+        print("setup and start")
+        ### Setup acquisition, send reference
+        self.rp_s.tx_txt('ACQ:START')
+        self.rp_s.tx_txt('ACQ:TRIG NOW')
+        self.rp_s.tx_txt('OUTPUT1:STATE ON')
+        self.rp_s.tx_txt('SOUR1:TRIG:INT')
+        ## Sleep? If needed add a sleep
+
+        # print('reading data')
+        # data_1, data_2 = [], []
+        # while data_1 == [] or data_1 == ["ERR!"]:
+        #     print(data_1)
+        #     data_1, data_2 = self.read_buffer()
+        # time.sleep(sample_time*2)
+        
+        while 1:
+            self.rp_s.tx_txt('ACQ:TRIG:STAT?')
+            if self.rp_s.rx_txt() == 'TD':
+                time.sleep(sample_time*3)
+                break
+        ## Read data (call twice)
+        # data_string_1, data_string_2 = '', ''
+        # while data_string_1 == '' or data_string_1 == "ERR!":
+        #     # print(f"DS1: {data_string_1}")
+        self.rp_s.tx_txt('ACQ:SOUR1:DATA?')            
+        data_string_1 = self.rp_s.rx_txt() 
+        print(data_string_1[:100])
+        self.rp_s.tx_txt('ACQ:SOUR2:DATA?')
+        data_string_2 = self.rp_s.rx_txt() 
+        print(data_string_2[:100])   
+    
+        self.rp_s.tx_txt('ACQ:SOUR1:DATA?')             
+        data_string_1 = self.rp_s.rx_txt() 
+        print(data_string_1[:100])
+        self.rp_s.tx_txt('ACQ:SOUR2:DATA?')
+        data_string_2 = self.rp_s.rx_txt()  
+        print(data_string_2[:100])
+
+        try:
+            data_string_1 = data_string_1.strip('{}\n\r').replace("  ", "").split(',')
+            data_1 = list(map(float, data_string_1))     
+            data_string_2 = data_string_2.strip('{}\n\r').replace("  ", "").split(',')
+            data_2 = list(map(float, data_string_2))
+        except Exception as e:
+            print(f"Error reading buffer: {e}")
+            # print(f"DS1: {data_string_1}")
+            # print(f"DS2: {data_string_2}")
+            data_1, data_2 = [0], [0]
+
+        ### Turn off
+        self.rp_s.tx_txt('ACQ:STOP')
+        self.rp_s.tx_txt('OUTPUT1:STATE OFF')
+
+        return data_1, data_2
+
+    def read_buffer(self):
+        self.rp_s.tx_txt('ACQ:SOUR1:DATA?')            
+        data_string_1 = self.rp_s.rx_txt() 
+        self.rp_s.tx_txt('ACQ:SOUR2:DATA?')
+        data_string_2 = self.rp_s.rx_txt()    
+        
+        self.rp_s.tx_txt('ACQ:SOUR1:DATA?')             
+        data_string_1 = self.rp_s.rx_txt() 
+        self.rp_s.tx_txt('ACQ:SOUR2:DATA?')
+        data_string_2 = self.rp_s.rx_txt()  
+
+    
+        data_string_1 = data_string_1.strip('{}\n\r').replace("  ", "").split(',')
+        # print(data_string_1)
+        data_1 = list(map(float, data_string_1))     
+        data_string_2 = data_string_2.strip('{}\n\r').replace("  ", "").split(',')
+        data_2 = list(map(float, data_string_2))
+        return data_1, data_2
+
     def setup_acquisition(self, waveform, frequency, amplitude, duty_cycle, decimation):
         # Signal
         self.rp_s.tx_txt('GEN:RST')
@@ -153,11 +245,9 @@ class rpwrapper:
         self.rp_s.tx_txt('SOUR1:VOLT ' + str(amplitude/2))
         self.rp_s.tx_txt('SOUR1:DCYC ' + str(duty_cycle))
         self.rp_s.tx_txt('SOUR1:VOLT:OFFS ' + str(amplitude/2))
-        ### BURST
-        
         # Acquisition
         self.rp_s.tx_txt('ACQ:DEC ' + str(decimation))
-        self.rp_s.tx_txt('ACQ:TRIG:DLY 8000')
+        self.rp_s.tx_txt('ACQ:TRIG:DLY 8192')
         ## TODO: Error handling
         return True
 
@@ -214,7 +304,7 @@ class rpwrapper:
         data_string_2 = data_string_2.strip('{}\n\r').replace("  ", "").split(',')
         data_2 = list(map(float, data_string_2))
 
-        print(data_1[:20])
+        # print(data_1[:20])
 
         # # stop acquisition
         # self.rp_s.tx_txt('ACQ:STOP')

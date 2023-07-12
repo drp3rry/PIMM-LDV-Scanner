@@ -25,6 +25,9 @@ class InteractiveWindow:
         ## give scanning settings to data manager
         self.data.frequency = self.laser.frequency
         self.data.decimation = self.laser.decimation
+        self.data.waveform = self.laser.waveform
+        self.data.laser_scale = self.laser.laser_scale
+        self.data.sampling = self.laser.sampling
 
         # Laser Parameters
         # self.laser.waveform = 'pwm'
@@ -135,9 +138,14 @@ class InteractiveWindow:
         self.laser.configure()
 
     def acquire_single_plot(self):
-        self.laser.start()
-        self.laser.acquire()
-        self.laser.stop()
+        # self.laser.start()
+        # self.laser.acquire()
+        # self.laser.stop()
+        # self.laser.plot()
+
+        ### Burst
+        self.laser.configure(burst = True)
+        self.laser.acquire_burst()
         self.laser.plot()
     
     def save_data(self):
@@ -179,22 +187,22 @@ class InteractiveWindow:
         ### Iterate over vertices
         if self.topleft == (None, None):
             self.topleft = (self.tkx, self.tky)
-            self.canvas.create_rectangle(self.topleft[0], self.topleft[1], self.topleft[0] + self.grid_size, self.topleft[1] + self.grid_size, fill="blue")
+            self.canvas.create_rectangle(self.topleft[0], self.topleft[1], self.topleft[0] + self.grid_size, self.topleft[1] + self.grid_size, fill="orange")
             self.paint_next = "set top right"
             print(self.topleft)
         elif self.topright == (None, None):
             self.topright = (self.tkx, self.tky)
-            self.canvas.create_rectangle(self.topright[0], self.topright[1], self.topright[0] + self.grid_size, self.topright[1] + self.grid_size, fill="blue")
+            self.canvas.create_rectangle(self.topright[0], self.topright[1], self.topright[0] + self.grid_size, self.topright[1] + self.grid_size, fill="orange")
             self.paint_next = "set bottom right"
             print(self.topright)
         elif self.bottomright == (None, None):
             self.bottomright = (self.tkx, self.tky)
-            self.canvas.create_rectangle(self.bottomright[0], self.bottomright[1], self.bottomright[0] + self.grid_size, self.bottomright[1] + self.grid_size, fill="blue")
+            self.canvas.create_rectangle(self.bottomright[0], self.bottomright[1], self.bottomright[0] + self.grid_size, self.bottomright[1] + self.grid_size, fill="orange")
             self.paint_next = "set bottom left"
             print(self.bottomright)
         elif self.bottomleft == (None, None):
             self.bottomleft = (self.tkx, self.tky)
-            self.canvas.create_rectangle(self.bottomleft[0], self.bottomleft[1], self.bottomleft[0] + self.grid_size, self.bottomleft[1] + self.grid_size, fill="blue")
+            self.canvas.create_rectangle(self.bottomleft[0], self.bottomleft[1], self.bottomleft[0] + self.grid_size, self.bottomleft[1] + self.grid_size, fill="orange")
             self.paint_next = "draw object outline"
             print(self.bottomleft)
         ## Create a box
@@ -229,14 +237,14 @@ class InteractiveWindow:
         ### Iterate over scanning points
         print("Starting scan..")
         ## Configure laser
-        self.laser.configure()
+        self.laser.configure(burst=True)
         # self.laser.start()
         scan_number = 1
-        self.laser.start()
+        # self.laser.start()
         for i in self.scanning_points:
             self.scan_loop(i, scan_number)
             scan_number += 1
-        self.laser.stop()
+        # self.laser.stop()
         print("Scan complete")
         self.data.save_data()
         print("Data saved")
@@ -253,7 +261,31 @@ class InteractiveWindow:
         
         ### Fire laser
         print("Acquiring data..")
-        self.laser.acquire()
+        # self.laser.acquire()
+        # scan_wait = False
+        # while scan_wait == False:
+        #     scan_wait = self.laser.acquire_burst()
+
+        ### Scan and validate data
+        data_check = False
+        attempt_cnt = 0
+        while data_check == False:
+            ## Fire laser, if successful data_check is True
+            data_check = self.laser.acquire_burst()
+            ## See if data is valid (not valid is too many +/- 1s)
+            # count +/- 1s in self.laser.response_data
+            # if count > 10, data_check = False
+            if self.laser.response_data.count(1) > 100 or self.laser.response_data.count(-1) > 100:
+                print("Data invalid")
+                data_check = False
+            attempt_cnt += 1
+            ## After 3 attempts pause and let user refocus
+            if attempt_cnt > 100:
+                focus = input("Calibrate? (y/n)")
+                if focus == "n":
+                    continue
+
+
 
         ### Save data
         print("Saving data..")
@@ -281,3 +313,9 @@ class InteractiveWindow:
 distance = 800
 window = InteractiveWindow(550, 550, 5, distance, mode_test=False)
 window.start()
+# print("Hello")
+# window.laser.configure(burst=True)
+# window.scanning_points = [1,2,3]
+# window.scan_loop((395, 345),1)
+
+

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
 import pandas as pd
+import datetime
 
 class DataManager:
     def __init__(self):
@@ -11,6 +12,9 @@ class DataManager:
         self.response_data = []
         self.frequency = 0
         self.decimation = 0
+        self.waveform = ""
+        self.laser_scale = 0
+        self.sampling = 0
         self.dataframe = None
         # self.filename = "woodbeam-test"
 
@@ -21,6 +25,7 @@ class DataManager:
                 data = {"scan_path": self.scan_path, "response_data": self.response_data,"reference": self.reference}
                 f.write(str(data))
                 f.close()
+        ### SAVE AS PANDAS DATAFRAME
         else:
             data_columns = ['time_index', 'x', 'y', 'response']
             data_list = []
@@ -36,11 +41,23 @@ class DataManager:
                     data_list.append([i, x, y, response])
             data_df = pd.DataFrame(data_list, columns=data_columns)
             data_df.to_pickle("sample_data/experiments/"+filename+".pkl")
-
+        ### SAVE EXPERIMENT DETAILS
+        experiment_details_path = "sample_data/experiments/experiment_details.csv"
+        try:
+            ### Read experiment details
+            experiment_details_df = pd.read_csv(experiment_details_path)
+            ### Append new experiment details
+            experiment_details_df = experiment_details_df.append({"filename": filename, "frequency": self.frequency, "decimation": self.decimation, "date": datetime.datetime.now(), "waveform": self.waveform, "laser_scale": self.laser_scale, "sampling": self.sampling}, ignore_index=True)
+            ### Save experiment details
+            experiment_details_df.to_csv(experiment_details_path, index=False)
+        except Exception as e:
+            print("Error saving experiment details: " + str(e))
+    
     def add_scan(self, reference, response):
         ## Response duration 
         sampling_rate = 125000000
         period_length = (1/self.frequency)/(self.decimation/sampling_rate)
+        print("Length of scan data (pre-cleaning): " + str(len(response)) + " samples")
         print("Cleaning scan data...")
         ## Clean scan data
         try:
@@ -50,6 +67,7 @@ class DataManager:
                     break
             reference = reference[impulse_start-1:impulse_start+int(period_length)]
             response = response[impulse_start-1:impulse_start+int(period_length)]
+            print("Length of scan data (post-cleaning): " + str(len(response)) + " samples")
         except:
             print("ERR: Scan data is not clean")
             # make response list of zeros length of self.reference

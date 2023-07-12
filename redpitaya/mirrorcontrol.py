@@ -51,7 +51,9 @@ class PositionTracker:
         self.solve_voltage(msg)
         if self.mode_test:
             return
+        ### Set AO0 to X-axis mirror voltage (pin 17)
         self.rp.set_voltage(0, self.voltages[0])
+        ### Set AO2 to Y-axis mirror voltage (pin 19)
         self.rp.set_voltage(2, self.voltages[1])
 
     def process_coordinates(self, x, y, msg = True):

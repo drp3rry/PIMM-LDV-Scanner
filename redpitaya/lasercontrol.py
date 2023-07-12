@@ -5,19 +5,25 @@ import time
 class LaserControl:
     def __init__(self, redpitaya_object):
         self.waveform = 'pwm'
-        self.frequency = 1
+        self.frequency = 5
         self.amplitude = 1
         self.duty_cycle = 0.001
-        self.decimation = 9
+        self.decimation = 11
         self.sample_time = (16384/(125*10**6))*self.decimation
+        self.laser_scale = 125
+        self.sampling = 125000000
         self.rp = redpitaya_object
         self.reference_data = []
         self.response_data = []
 
-    def configure(self):
+    def configure(self, burst = False):
         print("Configuring laser with parameters:")
-        print(f"Waveform: {self.waveform}, Frequency: {self.frequency}, Amplitude: {self.amplitude}, Duty Cycle: {self.duty_cycle}, Decimation: {self.decimation}")
-        self.rp.setup_acquisition(self.waveform, self.frequency, self.amplitude, self.duty_cycle, self.decimation)
+        if burst == True:
+            print(f"BURST: Waveform: {self.waveform}, Frequency: {self.frequency}, Amplitude: {self.amplitude}, Duty Cycle: {self.duty_cycle}, Decimation: {self.decimation}")
+            self.rp.setup_burst(self.waveform, self.frequency, self.amplitude, self.duty_cycle, self.decimation)
+        else:
+            print(f"Waveform: {self.waveform}, Frequency: {self.frequency}, Amplitude: {self.amplitude}, Duty Cycle: {self.duty_cycle}, Decimation: {self.decimation}")
+            self.rp.setup_acquisition(self.waveform, self.frequency, self.amplitude, self.duty_cycle, self.decimation)
 
     def start(self):
         # self.rp.acquisition_start()
@@ -41,6 +47,10 @@ class LaserControl:
         #     print("Data is empty, acquiring new data...")
         #     self.reference_data, self.response_data = self.rp.data_acquisition(self.sample_time, self.frequency)
         # return True
+    
+    def acquire_burst(self):
+        self.response_data, self.reference_data = self.rp.acquire_burst(self.sample_time, self.frequency)
+        return True
 
     def plot(self, clear = False):
         if clear:
