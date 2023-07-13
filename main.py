@@ -12,12 +12,14 @@ import ast
 
 
 class InteractiveWindow:
-    def __init__(self, width, height, grid_size, distance, mode_test=False):
+    # def __init__(self, width, height, grid_size, distance, mode_test=False):
+    def __init__(self, redpitaya_address, distance, ui_scaling, grid_size, mode_test=False):
+        """take distance in mm, ui_scaling and grid_size (1: 1mm per grid location)"""
         ### Control objects
         if mode_test:
             self.rp = rpwrapperTest()
         else:
-            self.rp = rpwrapper("169.254.29.96")
+            self.rp = rpwrapper(redpitaya_address)
 
         self.laser = LaserControl(self.rp)
         self.mirror = PositionTracker(distance, self.rp)
@@ -46,10 +48,16 @@ class InteractiveWindow:
 
 
         # TODO: Add automatic window size calculation based on distance
+        ### get window size
+        self.ui_scaling = ui_scaling
+        bounding_box = self.mirror.get_bounding_box()
+        self.width = round(bounding_box[0],0)*ui_scaling * 10
+        self.height = round(bounding_box[1],0)*ui_scaling * 10
+        self.grid_size = grid_size * self.ui_scaling * 10
         ### UI elements
-        self.width = width
-        self.height = height
-        self.grid_size = grid_size
+        # self.width = width
+        # self.height = height
+        
         self.coordinates = []
         self.tkx = 0
         self.tky = 0
@@ -111,8 +119,8 @@ class InteractiveWindow:
         ### update vertex corners
 
     def get_physical_coordinates(self, x, y):
-        x_actual = (abs(x - self.width)/self.grid_size) * -1
-        y_actual = abs(y - self.height)/self.grid_size
+        x_actual = (abs(x - self.width)/self.grid_size) * self.ui_scaling
+        y_actual = abs(y - self.height)/self.grid_size * self.ui_scaling
         return x_actual, y_actual
     
 
@@ -310,12 +318,13 @@ class InteractiveWindow:
     
 
 # decimation = 10
+# distance = 800
+# window = InteractiveWindow(550, 550, 5, distance, mode_test=False)
+# window.start()
+
 distance = 800
-window = InteractiveWindow(550, 550, 5, distance, mode_test=False)
+redpitaya_address = "169.254.29.96"
+window = InteractiveWindow(redpitaya_address, distance, 0.5, 1, mode_test=True)
 window.start()
-# print("Hello")
-# window.laser.configure(burst=True)
-# window.scanning_points = [1,2,3]
-# window.scan_loop((395, 345),1)
 
 
