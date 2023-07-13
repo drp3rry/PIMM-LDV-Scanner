@@ -109,7 +109,7 @@ $$
 $$
 3. Intersection of a beam and a plane:
 	- For a vector $\hat{k} = \begin{pmatrix} a  \\ b  \\ c  \end{pmatrix}$ with an origin $\begin{pmatrix} x_b  \\ y_b  \\ z_b  \end{pmatrix}$ we can express a beam as $$\text{beam: }\begin{pmatrix} x  \\ y  \\ z  \end{pmatrix} = \hat{k}t + \begin{pmatrix} x_0  \\ y_0  \\ z_0  \end{pmatrix}$$
-	- For a normal vector $\hat{n}$ and point on the plane  $p_0 = \begin{pmatrix} x_p  \\ y_b  \\ c_b  \end{pmatrix}$ the set of points $p$ which define the plane can be expressed as $$\text{plane: }\text{plane: }(p-p_0)\cdot \hat{n} = 0$$
+	- For a normal vector $\hat{n}$ and point on the plane  $p_0 = \begin{pmatrix} x_p  \\ y_b  \\ c_b  \end{pmatrix}$ the set of points $p$ which define the plane can be expressed as $$\text{plane: }\text{plane: }(p-p_0)\cdot \hat{n} = 0$
 	- Substituting $p$ for the expression of the beam we can solve for the parameter $t$: $$
 	\begin{align*} 
 	\Big(\begin{pmatrix} x  \\ y  \\ z  \end{pmatrix}-\begin{pmatrix} x_p  \\ y_p  \\ z_p  \end{pmatrix}\Big)\cdot \hat{n} &= 0 \\
